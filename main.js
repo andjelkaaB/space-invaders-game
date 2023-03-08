@@ -1,0 +1,140 @@
+const grid = document.querySelector('.grid')
+grid.style.background = "url('images/space.jpg') center"
+grid.style.backgroundSize = "cover"
+const resultDisplay = document.querySelector('.result')
+let currentSpaceshipIndex = 202
+let width = 15
+let direction = 1
+let moveTimerId
+let goingRight = true
+let removedInvaders = []
+let result = 0
+
+for (let i = 0; i < 225; i++) {
+    const square = document.createElement('div')
+    grid.appendChild(square)
+}
+
+const squares = Array.from(document.querySelectorAll('.grid div'))
+
+const invaders = [
+    0,1,2,3,4,5,6,7,8,9,
+    15,16,17,18,19,20,21,22,23,24,
+    30,31,32,33,34,35,36,37,38,39,
+    45,46,47,48,49,50,51,52,53,54,
+]
+
+
+function drawInvaders() {
+    for (let i = 0; i < invaders.length; i++) {
+        if (!removedInvaders.includes(i)) {
+            squares[invaders[i]].classList.add('invader')
+        }
+    }
+}
+
+drawInvaders()
+
+function removeInvaders() {
+    for (let i = 0; i < invaders.length; i++) {
+        squares[invaders[i]].classList.remove('invader')
+    }
+}
+
+squares[currentSpaceshipIndex].classList.add('spaceship')
+
+function moveSpaceship(e) {
+    squares[currentSpaceshipIndex].classList.remove('spaceship')
+    switch(e.key) {
+        case 'ArrowLeft':
+            if (currentSpaceshipIndex % width !== 0) currentSpaceshipIndex -=1
+        break
+        case 'ArrowRight':
+            if (currentSpaceshipIndex % width < width -1) currentSpaceshipIndex +=1
+        break
+    }
+    squares[currentSpaceshipIndex].classList.add('spaceship')
+}
+
+document.addEventListener('keydown', moveSpaceship)
+
+function moveInvaders() {
+    const leftEdge = invaders[0] % width === 0
+    const rightEdge = invaders[invaders.length -1] % width === width - 1
+
+    removeInvaders()
+
+    if (rightEdge && goingRight) {
+        for (let i = 0; i < invaders.length; i++) {
+            invaders[i] += width +1
+            direction = -1
+            goingRight = false
+        }
+    }
+
+    if (leftEdge && !goingRight) {
+        for (let i = 0; i < invaders.length; i++) {
+            invaders[i] += width -1
+            direction = 1
+            goingRight = true
+        }
+    }
+
+    for (let i = 0; i < invaders.length; i++) {
+        invaders[i] += direction
+    }
+
+    drawInvaders()
+
+    if (squares[currentSpaceshipIndex].classList.contains('invader', 'spaceship')) {
+        resultDisplay.innerHTML = "Game over"
+        clearInterval(moveTimerId)
+    }
+
+    for (let i = 0; i < invaders.length; i++) {
+        if (invaders[i] > squares.length) {
+            resultDisplay.innerHTML = "Game over"
+            clearInterval(moveTimerId)
+        }
+    }
+    if (removedInvaders.length === invaders.length) {
+        resultDisplay.innerHTML = 'You win'
+        clearInterval(moveTimerId)
+    }
+}
+
+moveTimerId = setInterval(moveInvaders, 500)
+
+function shoot(e) {
+    let laserId
+    let currentLaserIndex = currentSpaceshipIndex
+    
+    function moveLaser() {
+        squares[currentLaserIndex].classList.remove('laser')
+        currentLaserIndex -= width
+        squares[currentLaserIndex].classList.add('laser')
+
+        if (squares[currentLaserIndex].classList.contains('invader')) {
+            squares[currentLaserIndex].classList.remove('laser')
+            squares[currentLaserIndex].classList.remove('invader')
+            squares[currentLaserIndex].classList.add('boom')
+
+            setTimeout(() => squares[currentLaserIndex].classList.remove('boom'), 300)
+            clearInterval(laserId)
+
+            const removedInvader = invaders.indexOf(currentLaserIndex)
+            removedInvaders.push(removedInvader)
+            result++
+            resultDisplay.innerHTML = `Score: ${result}`
+            console.log(removedInvaders)
+        }
+    }
+        
+        switch(e.key) {
+            case 'ArrowUp':
+                laserId = setInterval(moveLaser, 50)
+        }
+    
+}
+
+document.addEventListener('keydown', shoot)
